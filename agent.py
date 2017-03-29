@@ -19,3 +19,12 @@ def load_data(sample_dir):
 
 images, steering_angles = load_data('data')
 print('Loaded {} samples'.format(len(steering_angles)))
+
+import keras
+
+model = keras.models.Sequential()
+model.add(keras.layers.Flatten(input_shape=(images[0].shape)))
+model.add(keras.layers.Dense(1))
+model.compile(optimizer='adam', loss='mse')
+model.fit(images, steering_angles, validation_split=0.2, epochs=10, shuffle=True)
+model.save('model.h5')
