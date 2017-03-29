@@ -23,7 +23,8 @@ print('Loaded {} samples'.format(len(steering_angles)))
 import keras
 
 model = keras.models.Sequential()
-model.add(keras.layers.core.Lambda(lambda x: x / 255.0 + 0.5, input_shape=images[0].shape))
+model.add(keras.layers.convolutional.Cropping2D(cropping=((80, 20), (0, 0)), input_shape=images[0].shape))
+model.add(keras.layers.core.Lambda(lambda x: x / 255.0 + 0.5))
 model.add(keras.layers.Conv2D(6, (5, 5), activation='relu'))
 model.add(keras.layers.MaxPooling2D())
 model.add(keras.layers.Conv2D(16, (5, 5), activation='relu'))
