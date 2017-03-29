@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import csv
-from cv2 import imread
+from cv2 import imread, flip
 import numpy as np
 
 def load_data(sample_dir):
@@ -12,7 +12,9 @@ def load_data(sample_dir):
     for line in reader:
       filename = sample_dir + '/IMG/' + line[0].split('/')[-1]
       images.append(imread(filename))
+      images.append(flip(images[-1], 1))
       steering.append(float(line[3]))
+      steering.append(-steering[-1])
   return (np.array(images), np.array(steering))
 
 images, steering_angles = load_data('data')
