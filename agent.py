@@ -24,8 +24,11 @@ import keras
 
 model = keras.models.Sequential()
 model.add(keras.layers.core.Lambda(lambda x: x / 255.0 + 0.5, input_shape=images[0].shape))
+model.add(keras.layers.Conv2D(6, (5, 5), activation='relu'))
+model.add(keras.layers.MaxPooling2D())
+model.add(keras.layers.Conv2D(16, (5, 5), activation='relu'))
 model.add(keras.layers.Flatten())
 model.add(keras.layers.Dense(1))
 model.compile(optimizer='adam', loss='mse')
-model.fit(images, steering_angles, validation_split=0.2, epochs=10, shuffle=True)
+model.fit(images, steering_angles, validation_split=0.2, epochs=5, shuffle=True)
 model.save('model.h5')
