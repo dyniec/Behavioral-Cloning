@@ -2,6 +2,7 @@
 
 import csv
 from cv2 import imread
+import numpy as np
 
 def load_data(sample_dir):
   images = []
@@ -12,7 +13,7 @@ def load_data(sample_dir):
       filename = sample_dir + '/IMG/' + line[0].split('/')[-1]
       images.append(imread(filename))
       steering.append(float(line[3]))
-  return (images, steering)
+  return (np.array(images), np.array(steering))
 
-images, steering_angle = load_data('data')
-print('Loaded {} samples'.format(len(steering_angle)))
+images, steering_angles = load_data('data')
+print('Loaded {} samples'.format(len(steering_angles)))
