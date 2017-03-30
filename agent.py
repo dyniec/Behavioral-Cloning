@@ -10,11 +10,20 @@ def load_data(sample_dir):
   with open(sample_dir + '/driving_log.csv') as csvfile:
     reader = csv.reader(csvfile)
     for line in reader:
-      filename = sample_dir + '/IMG/' + line[0].split('/')[-1]
-      images.append(imread(filename))
-      images.append(flip(images[-1], 1))
-      steering.append(float(line[3]))
-      steering.append(-steering[-1])
+      img_center = imread(sample_dir + '/IMG/' + line[0].split('/')[-1])
+      img_left = imread(sample_dir + '/IMG/' + line[1].split('/')[-1])
+      img_right = imread(sample_dir + '/IMG/' + line[2].split('/')[-1])
+      angle = float(line[3])
+
+      images.append(img_center)
+      images.append(flip(img_center, 1))
+      images.append(img_left)
+      images.append(img_right)
+
+      steering.append(angle)
+      steering.append(-angle)
+      steering.append(angle + 0.6)
+      steering.append(angle - 0.6)
   return (np.array(images), np.array(steering))
 
 images, steering_angles = load_data('data')
