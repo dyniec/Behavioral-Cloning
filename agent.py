@@ -3,6 +3,12 @@
 import csv
 from cv2 import imread, flip, cvtColor, COLOR_BGR2HSV
 import numpy as np
+import random
+
+def apply_jitter(values, max_jitter=0.25):
+  for i in range(len(values)):
+    values[i] = values[i] - max_jitter + max_jitter * 2 * random.random()
+  return values
 
 def load_data(sample_dir):
   images = []
@@ -44,5 +50,5 @@ model.add(keras.layers.Flatten())
 model.add(keras.layers.Dense(30))
 model.add(keras.layers.Dense(1))
 model.compile(optimizer='adam', loss='mse')
-model.fit(images, steering_angles, validation_split=0.2, epochs=5, shuffle=True)
+model.fit(images, apply_jitter(steering_angles), validation_split=0.2, epochs=5, shuffle=True)
 model.save('model.h5')
