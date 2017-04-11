@@ -40,28 +40,45 @@ print('Loaded {} samples'.format(len(steering_angles)))
 
 import keras
 
-model = keras.models.Sequential()
-model.add(keras.layers.convolutional.Cropping2D(cropping=((80, 20), (0, 0)), input_shape=images[0].shape))
-model.add(keras.layers.Lambda(lambda x: x / 255.0 - 0.5))
-model.add(keras.layers.Conv2D(10, (5, 5), activation='relu'))
-model.add(keras.layers.MaxPooling2D(pool_size=(2, 2), strides=(1, 1)))
-model.add(keras.layers.Conv2D(20, (5, 5), activation='relu'))
-model.add(keras.layers.MaxPooling2D(pool_size=(2, 2), strides=(1, 1)))
-model.add(keras.layers.Conv2D(26, (5, 5), activation='relu'))
-model.add(keras.layers.Dropout(0.5))
-model.add(keras.layers.Conv2D(28, (5, 5), activation='relu'))
-model.add(keras.layers.Dropout(0.5))
+def create_model():
+  model = keras.models.Sequential()
+  model.add(keras.layers.convolutional.Cropping2D(cropping=((80, 20), (0, 0)), input_shape=images[0].shape))
+  model.add(keras.layers.Lambda(lambda x: x / 255.0 - 0.5))
+  model.add(keras.layers.Conv2D(10, (5, 5), activation='relu'))
+  model.add(keras.layers.MaxPooling2D(pool_size=(2, 2), strides=(1, 1)))
+  model.add(keras.layers.Conv2D(20, (5, 5), activation='relu'))
+  model.add(keras.layers.MaxPooling2D(pool_size=(2, 2), strides=(1, 1)))
+  model.add(keras.layers.Conv2D(26, (5, 5), activation='relu'))
+  model.add(keras.layers.Dropout(0.5))
+  model.add(keras.layers.Conv2D(28, (5, 5), activation='relu'))
+  model.add(keras.layers.Dropout(0.5))
 
-model.add(keras.layers.Flatten())
+  model.add(keras.layers.Flatten())
 
-model.add(keras.layers.Dense(30))
-model.add(keras.layers.Dropout(0.2))
-model.add(keras.layers.Dense(20))
-model.add(keras.layers.Dropout(0.2))
-model.add(keras.layers.Dense(10))
-model.add(keras.layers.Dropout(0.2))
-model.add(keras.layers.Dense(1))
+  model.add(keras.layers.Dense(30))
+  model.add(keras.layers.Dropout(0.2))
+  model.add(keras.layers.Dense(20))
+  model.add(keras.layers.Dropout(0.2))
+  model.add(keras.layers.Dense(10))
+  model.add(keras.layers.Dropout(0.2))
+  model.add(keras.layers.Dense(1))
 
-model.compile(optimizer='adam', loss='mse')
-model.fit(images, apply_jitter(steering_angles), validation_split=0.2, epochs=5, shuffle=True)
-model.save('model.h5')
+  model.compile(optimizer='adam', loss='mse')
+  return model
+
+if __name__ == '__main__':
+  import argparse
+  parser = argparse.ArgumentParser(description='Agent training')
+  parser.add_argument('--load', type=str, required=False, default=None, help='filename to load model from')
+  args = parser.parse_args()
+
+  model = None
+  if args.load:
+    print("Loading model from ", args.load)
+    model = keras.models.load_model(args.load)
+  else:
+    print("creating new model")
+    model = create_model()
+
+  model.fit(images, apply_jitter(steering_angles), validation_split=0.2, epochs=3, shuffle=True)
+  model.save('model.h5')
