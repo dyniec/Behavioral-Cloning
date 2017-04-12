@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import csv
-from cv2 import imread, flip
+from cv2 import imread, flip, cvtColor, COLOR_BGR2HSV
 import numpy as np
 
 def load_data(sample_dir):
@@ -11,8 +11,11 @@ def load_data(sample_dir):
     reader = csv.reader(csvfile)
     for line in reader:
       img_center = imread(sample_dir + '/IMG/' + line[0].split('/')[-1])
+      img_center = cvtColor(img_center, COLOR_BGR2HSV)
       img_left = imread(sample_dir + '/IMG/' + line[1].split('/')[-1])
+      img_left = cvtColor(img_left, COLOR_BGR2HSV)
       img_right = imread(sample_dir + '/IMG/' + line[2].split('/')[-1])
+      img_right = cvtColor(img_right, COLOR_BGR2HSV)
       angle = float(line[3])
 
       images.append(img_center)
