@@ -39,7 +39,9 @@ def generate_batch(samples, sample_dir):
       steering.append(-angle)
       steering.append(angle + 0.6)
       steering.append(angle - 0.6)
-      yield (np.array(images), np.array(steering))
+      # only use few of the samples without stearing
+      if (((angle < -0.1) or (angle > 0.1)) and random.random() > 0.9):
+        yield (np.array(images), np.array(steering))
 
 import keras
 
