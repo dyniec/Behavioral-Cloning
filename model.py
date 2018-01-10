@@ -38,21 +38,21 @@ def generate_batch(samples, sample_dir, batch_size=32):
     for line in shuffle(samples):
       sep='\\'
       img_center = load_and_optimize(sample_dir + '/IMG/' + line[0].split(sep)[-1])
-      img_left = load_and_optimize(sample_dir + '/IMG/' + line[1].split(sep)[-1])
-      img_right = load_and_optimize(sample_dir + '/IMG/' + line[2].split(sep)[-1])
-      angle = float(line[3])
+      #img_left = load_and_optimize(sample_dir + '/IMG/' + line[1].split(sep)[-1])
+      #img_right = load_and_optimize(sample_dir + '/IMG/' + line[2].split(sep)[-1])
+      angle = np.array([float(line[3]),float(line[4])])
 
-      angle = apply_jitter(angle)
+      #angle = apply_jitter(angle)
 
       images.append(img_center)
-      images.append(flip(img_center, 1))
-      images.append(img_left)
-      images.append(img_right)
+      #images.append(flip(img_center, 1))
+      #images.append(img_left)
+      #images.append(img_right)
 
       steering.append(angle)
-      steering.append(-angle)
-      steering.append(min(1.0, angle + 0.3))
-      steering.append(max(-1.0, angle - 0.3))
+      #steering.append(-angle)
+      #steering.append(min(1.0, angle + 0.3))
+      #steering.append(max(-1.0, angle - 0.3))
 
       if (len(images) >= batch_size):
         yield shuffle(np.array(images), np.array(steering))
@@ -107,7 +107,7 @@ def create_model():
   model.add(Flatten())
   model.add(Dropout(0.5))
   model.add(Dense(
-    output_dim=1,
+    output_dim=2,
     init='he_normal',
     W_regularizer=l2(W_l2)))
 
@@ -159,6 +159,9 @@ if __name__ == '__main__':
   train_generator = generate_batch(train_samples, data, batch_size=32)
   #for elem in train_generator:
   #  print(elem)
-
-  model.fit_generator(train_generator, len(train_samples) * 4 / 32, epochs = args.epochs)
-  model.save('model.h5')
+  try:
+    model.fit_generator(train_generator, len(train_samples) * 4 / 32, epochs = args.epochs)
+  except Exception as e:
+    pass
+  finally:
+    model.save('model.h5')
