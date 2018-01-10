@@ -135,6 +135,7 @@ if __name__ == '__main__':
   import argparse
   parser = argparse.ArgumentParser(description='Agent training')
   parser.add_argument('--load', type=str, required=False, default=None, help='filename to load model from')
+  parser.add_argument('--save', type=str, required=False, default=None, help='filename to save model to')
   parser.add_argument('--data', type=str, required=False, default='data', help='path to training data')
   parser.add_argument('--epochs', type=int, required=False, default=10, help='number of epochs')
   args = parser.parse_args()
@@ -161,7 +162,7 @@ if __name__ == '__main__':
   #  print(elem)
   try:
     model.fit_generator(train_generator, len(train_samples) * 4 / 32, epochs = args.epochs)
-  except Exception as e:
+  except KeyboardInterrupt as e:
     pass
   finally:
-    model.save('model.h5')
+    model.save(args.save if args.save else 'model.h5')
