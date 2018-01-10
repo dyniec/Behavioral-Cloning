@@ -4,6 +4,16 @@ import csv
 from cv2 import imread, flip, cvtColor, COLOR_BGR2HSV
 import numpy as np
 import random
+from keras.models import Model, Sequential
+from keras.layers import (
+    Dense, Dropout, Flatten,
+    SpatialDropout2D)
+from keras.layers.convolutional import (
+     Convolution2D, MaxPooling2D)
+from keras.optimizers import  SGD
+from keras.regularizers import l2
+from keras import metrics
+from keras import backend as K
 
 def apply_jitter(value, max_jitter=0.05):
   return value - max_jitter + max_jitter * 2 * random.random()
@@ -18,9 +28,6 @@ def load_data(sample_dir):
 
 def load_and_optimize(path):
   image = imread(path)
-  image = cvtColor(image, COLOR_BGR2HSV)
-  if (random.random() > 0.5):
-    image[:,:,2] = image[:,:,2] * .25+np.random.uniform()
   return image
 
 def generate_batch(samples, sample_dir, batch_size=32):
@@ -29,9 +36,10 @@ def generate_batch(samples, sample_dir, batch_size=32):
     images = []
     steering = []
     for line in shuffle(samples):
-      img_center = load_and_optimize(sample_dir + '/IMG/' + line[0].split('/')[-1])
-      img_left = load_and_optimize(sample_dir + '/IMG/' + line[1].split('/')[-1])
-      img_right = load_and_optimize(sample_dir + '/IMG/' + line[2].split('/')[-1])
+      sep='\\'
+      img_center = load_and_optimize(sample_dir + '/IMG/' + line[0].split(sep)[-1])
+      img_left = load_and_optimize(sample_dir + '/IMG/' + line[1].split(sep)[-1])
+      img_right = load_and_optimize(sample_dir + '/IMG/' + line[2].split(sep)[-1])
       angle = float(line[3])
 
       angle = apply_jitter(angle)
@@ -54,30 +62,74 @@ def generate_batch(samples, sample_dir, batch_size=32):
 import keras
 
 def create_model():
-  model = keras.models.Sequential()
-  model.add(keras.layers.convolutional.Cropping2D(cropping=((80, 20), (0, 0)), input_shape=(160,320,3)))
-  model.add(keras.layers.Lambda(lambda x: x / 255.0 - 0.5))
-  model.add(keras.layers.Conv2D(10, (5, 5), activation='relu'))
-  model.add(keras.layers.MaxPooling2D(pool_size=(2, 2), strides=(1, 1)))
-  model.add(keras.layers.Conv2D(20, (5, 5), activation='relu'))
-  model.add(keras.layers.MaxPooling2D(pool_size=(2, 2), strides=(1, 1)))
-  model.add(keras.layers.Conv2D(26, (5, 5), activation='relu'))
-  model.add(keras.layers.Dropout(0.5))
-  model.add(keras.layers.Conv2D(28, (5, 5), activation='relu'))
-  model.add(keras.layers.Dropout(0.5))
+  #taken from https://github.com/emef/sdc
+  input_shape = (160, 320, 3)
+  use_adadelta = True,
+  learning_rate = 0.01,
+  W_l2 = 0.0001,
+  scale = 16
+  model = Sequential()
+  model.add(Convolution2D(16, 5, 5,
+                          input_shape=input_shape,
+                          init="he_normal",
+                          activation='relu',
+                          border_mode='same'))
+  model.add(SpatialDropout2D(0.1))
+  model.add(MaxPooling2D(pool_size=(2, 2)))
+  model.add(Convolution2D(20, 5, 5,
+                          init="he_normal",
+                          activation='relu',
+                          border_mode='same'))
+  model.add(SpatialDropout2D(0.1))
+  model.add(MaxPooling2D(pool_size=(2, 2)))
+  model.add(Convolution2D(40, 3, 3,
+                          init="he_normal",
+                          activation='relu',
+                          border_mode='same'))
+  model.add(SpatialDropout2D(0.1))
+  model.add(MaxPooling2D(pool_size=(2, 2)))
+  model.add(Convolution2D(60, 3, 3,
+                          init="he_normal",
+                          activation='relu',
+                          border_mode='same'))
+  model.add(SpatialDropout2D(0.1))
+  model.add(MaxPooling2D(pool_size=(2, 2)))
+  model.add(Convolution2D(80, 2, 2,
+                          init="he_normal",
+                          activation='relu',
+                          border_mode='same'))
+  model.add(SpatialDropout2D(0.1))
+  model.add(MaxPooling2D(pool_size=(2, 2)))
+  model.add(Convolution2D(128, 2, 2,
+                          init="he_normal",
+                          activation='relu',
+                          border_mode='same'))
+  model.add(Flatten())
+  model.add(Dropout(0.5))
+  model.add(Dense(
+    output_dim=1,
+    init='he_normal',
+    W_regularizer=l2(W_l2)))
 
-  model.add(keras.layers.Flatten())
+  optimizer = ('adadelta' if use_adadelta
+               else SGD(lr=learning_rate, momentum=0.9))
 
-  model.add(keras.layers.Dense(30, activation='tanh'))
-  model.add(keras.layers.Dropout(0.2))
-  model.add(keras.layers.Dense(20, activation='tanh'))
-  model.add(keras.layers.Dropout(0.2))
-  model.add(keras.layers.Dense(10, activation='tanh'))
-  model.add(keras.layers.Dropout(0.2))
-  model.add(keras.layers.Dense(1))
 
-  model.compile(optimizer='adam', loss='mse')
+  model.compile(
+    loss='mean_squared_error',
+    optimizer=optimizer,
+    metrics=['rmse'])
   return model
+def rmse(y_true, y_pred):
+    '''Calculates RMSE
+    '''
+    return K.sqrt(K.mean(K.square(y_pred - y_true)))
+
+def top_2(y_true, y_pred):
+    return K.mean(tf.nn.in_top_k(y_pred, K.argmax(y_true, axis=-1), 2))
+
+metrics.rmse = rmse
+metrics.top_2 = top_2
 
 if __name__ == '__main__':
   import argparse
@@ -102,9 +154,11 @@ if __name__ == '__main__':
   print("Loading training data from", data)
   samples = load_data(data)
   print('Loaded {} samples'.format(len(samples)))
-
   train_samples = samples
+  print(samples)
   train_generator = generate_batch(train_samples, data, batch_size=32)
+  #for elem in train_generator:
+  #  print(elem)
 
   model.fit_generator(train_generator, len(train_samples) * 4 / 32, epochs = args.epochs)
   model.save('model.h5')
